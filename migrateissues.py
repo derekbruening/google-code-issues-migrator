@@ -34,17 +34,31 @@ GITHUB_SPARE_REQUESTS = 50
 
 # Mapping from Google Code issue labels to Github labels
 
+# Missing entries are mapped as-is, unless they map to ''
 LABEL_MAPPING = {
-    'Type-Defect' : 'bug',
-    'Type-Enhancement' : 'enhancement'
+    'Type-Defect'       : 'Type-Bug',
+    'Type-Enhancement'  : 'Type-Feature',
+    'Type-Task'         : 'Type-Feature',
+    'Tool-BBCov'        : 'Tool-DrCov',
+    'Milestone-Release1.0' : ''
 }
 
 # Mapping from Google Code issue states to Github labels
 
+# Missing entries are deleted
 STATE_MAPPING = {
-    'invalid': 'invalid',
-    'duplicate': 'duplicate',
-    'wontfix': 'wontfix'
+    # 'new' => remove
+    # 'accepted' => remove
+    # 'started' => remove
+    'duplicate'       : 'Status-Duplicate',
+    'needinfo'        : 'Status-NeedInfo',
+    'blocked'         : 'Status-Blocked',
+    'invalid'         : 'Status-Invalid',
+    'wontfix'         : 'Status-WontFix',
+    'fixed'           : 'Status-Fixed',
+    'verified'        : 'Status-Fixed',
+    'done'            : 'Status-Fixed',
+    'cannotreproduce' : 'Status-CannotReproduce'
 }
 
 def output(string):
@@ -188,13 +202,14 @@ def get_gcode_issue(issue_summary):
         'status': issue_summary['Status'].lower()
     }
 
-    # Build a list of labels to apply to the new issue, including an 'imported' tag that
+    # Build a list of labels to apply to the new issue, including a 'Migrated' tag that
     # we can use to identify this issue as one that's passed through migration.
-    labels = ['imported']
+    labels = ['Migrated']
     for label in issue_summary['AllLabels'].split(', '):
         if label.startswith('Priority-') and options.omit_priority:
             continue
-        labels.append(LABEL_MAPPING.get(label, label))
+        if LABEL_MAPPING.get(label, label):
+            labels.append(LABEL_MAPPING.get(label, label))
 
     # Add additional labels based on the issue's state
     if issue['status'] in STATE_MAPPING:
@@ -300,7 +315,7 @@ def process_gcode_issues(existing_issues):
                 body = '_Skipping this issue number to maintain synchronization with Google Code issue IDs._'
                 footer = GOOGLE_ISSUE_TEMPLATE.format(GOOGLE_URL.format(google_project_name, gid))
                 body += '\n\n' + footer
-                github_issue = github_repo.create_issue(title, body = body, labels = [github_label('imported')])
+                github_issue = github_repo.create_issue(title, body = body, labels = [github_label('Migrated')])
                 github_issue.edit(state = 'closed')
                 existing_issues[previous_gid] = github_issue
             previous_gid = issue['gid']
@@ -342,11 +357,11 @@ def get_existing_github_issues():
             google_id = int(id_match.group(1))
             issue_map[google_id] = issue
             labels = [l.name for l in issue.get_labels()]
-            if not 'imported' in labels:
+            if not 'Migrated' in labels:
                 # TODO we could fix up the label here instead of just warning
-                logging.warn('Issue missing imported label %s- %r - %s', google_id, labels, issue.title)
-        imported_count = len(issue_map)
-        logging.info('Found %d Github issues, %d imported',existing_count,imported_count)
+                logging.warn('Issue missing migrated label %s- %r - %s', google_id, labels, issue.title)
+        migrated_count = len(issue_map)
+        logging.info('Found %d Github issues, %d migrated',existing_count,migrated_count)
     except:
         logging.error('Failed to enumerate existing issues')
         raise
