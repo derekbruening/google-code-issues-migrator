@@ -220,8 +220,8 @@ def get_gcode_issue(issue_summary):
         # to find where it was documented), so split comments up into multiple
         # posts as needed.
         while text:
-            comment['body'] = text[:7000]
-            text = text[7000:]
+            comment['body'] = text[:9000]
+            text = text[9000:]
             if text:
                 comment['body'] += '...'
                 text = '...' + text
