@@ -72,6 +72,16 @@ def escape(s):
     return s
 
 def transform_to_markdown_compliant(string):
+    # Avoid template from being squashed into a single paragraph
+    string = string.replace('What steps will reproduce the problem?',
+                            '**What steps will reproduce the problem?**\n');
+    string = string.replace('What is the expected output? What do you see instead?',
+                            '\n\n**What is the expected output? What do you see instead?**\n');
+    string = string.replace('What version of the product are you using? On what operating system?',
+                            '\n\n**What version of the product are you using? On what operating system?**\n');
+    string = string.replace('Please provide any additional information below.',
+                            '\n\n**Please provide any additional information below.**\n');
+
     # Escape chars interpreted as markdown formatting by GH
     string = re.sub(r'(\s)~~', r'\1\\~~', string)
     string = re.sub(r'\n(\s*)>', r'\n\1\\>', string)
